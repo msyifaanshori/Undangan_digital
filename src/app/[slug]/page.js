@@ -1,82 +1,104 @@
 // src/app/[slug]/page.js
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import RsvpForm from "./RsvpForm"; // Pastikan file RsvpForm.js sudah ada
+import UndanganPageClient from "./undanganPageClient";
+
+// Data fallback untuk slug demo — dipakai jika belum ada di Supabase
+const DEMO_DATA = {
+  "demo-elegance": {
+    slug: "demo-elegance",
+    tema: "Elegance Gold",
+    nama_klien: "Reza & Nadia",
+    nama_pria: "Reza Aditya Pratama, S.T.",
+    ortu_pria: "Putra dari Bpk. H. Ahmad Fauzi & Ibu Hj. Siti Rahayu",
+    nama_wanita: "Nadia Azzahra, S.Pd.",
+    ortu_wanita: "Putri dari Bpk. Drs. Budi Santoso & Ibu Dra. Lestari",
+    tanggal_acara: "Sabtu, 12 Juli 2026",
+    tempat_akad: "Masjid Al-Ikhlas, Jl. Sudirman No. 10, Jakarta Selatan",
+    tempat_resepsi: "Gedung Grand Ballroom, Jl. Gatot Subroto No. 5, Jakarta",
+  },
+  "demo-rustic": {
+    slug: "demo-rustic",
+    tema: "Rustic Sage",
+    nama_klien: "Ardi & Putri",
+    nama_pria: "Ardi Nugroho, S.Hut.",
+    ortu_pria: "Putra dari Bpk. Suparno & Ibu Winarti",
+    nama_wanita: "Putri Sekar Wangi, S.T.P.",
+    ortu_wanita: "Putri dari Bpk. Hartono & Ibu Sri Mulyani",
+    tanggal_acara: "Minggu, 20 September 2026",
+    tempat_akad: "Pura Mangkunegaran, Surakarta",
+    tempat_resepsi: "Pendopo Agung, Jl. Pahlawan No. 3, Solo",
+  },
+  "demo-navy": {
+    slug: "demo-navy",
+    tema: "Ocean Navy",
+    nama_klien: "Bagas & Laras",
+    nama_pria: "Bagas Prasetya, S.I.K.",
+    ortu_pria: "Putra dari Bpk. Kombes Pol. Susanto & Ibu Endah",
+    nama_wanita: "Laras Kusumawardani, S.H.",
+    ortu_wanita: "Putri dari Bpk. Dr. Ridwan, M.H. & Ibu Dra. Nurul",
+    tanggal_acara: "Jumat, 14 Agustus 2026",
+    tempat_akad: "Masjid Agung Baitul Makmur, Banda Aceh",
+    tempat_resepsi: "Hotel Hermes Palace, Jl. Teuku Umar, Banda Aceh",
+  },
+  "demo-terracotta": {
+    slug: "demo-terracotta",
+    tema: "Terracotta Warm",
+    nama_klien: "Dika & Ayu",
+    nama_pria: "Dika Firmansyah, S.E.",
+    ortu_pria: "Putra dari Bpk. H. Firmansyah & Ibu Hj. Darsini",
+    nama_wanita: "Ayu Maharani, S.Farm.",
+    ortu_wanita: "Putri dari Bpk. Apt. Gunawan, M.Si. & Ibu Sari",
+    tanggal_acara: "Sabtu, 17 Oktober 2026",
+    tempat_akad: "Masjid Raya Mujahidin, Pontianak",
+    tempat_resepsi: "Ballroom Hotel Kapuas Palace, Pontianak",
+  },
+  "demo-pastel": {
+    slug: "demo-pastel",
+    tema: "Pastel Dream",
+    nama_klien: "Kevin & Sasa",
+    nama_pria: "Kevin Nathaniel, S.Ds.",
+    ortu_pria: "Putra dari Bpk. Hendra & Ibu Melisa",
+    nama_wanita: "Sasa Pramesti, S.Psi.",
+    ortu_wanita: "Putri dari Bpk. Wibowo & Ibu Anastasia",
+    tanggal_acara: "Minggu, 8 November 2026",
+    tempat_akad: "Kapel Santo Yosep, Jl. Diponegoro No. 25, Surabaya",
+    tempat_resepsi: "Shangri-La Hotel Surabaya, Jl. Mayjend Sungkono 120",
+  },
+  "demo-midnight": {
+    slug: "demo-midnight",
+    tema: "Midnight Glam",
+    nama_klien: "Rafael & Citra",
+    nama_pria: "Rafael Dominic, S.Sn.",
+    ortu_pria: "Putra dari Bpk. Antonius & Ibu Francisca",
+    nama_wanita: "Citra Maharani, S.T.",
+    ortu_wanita: "Putri dari Bpk. Ir. Haryanto & Ibu Dewi",
+    tanggal_acara: "Sabtu, 5 Desember 2026",
+    tempat_akad: "The Stones Hotel, Legian Bali",
+    tempat_resepsi: "The Stones Hotel Ballroom, Jl. Raya Legian, Kuta, Bali",
+  },
+};
 
 export default async function UndanganKlien({ params, searchParams }) {
-  const slug = params.slug;
-  const namaTamu = searchParams.to || "Tamu Spesial";
+  // Next.js 15+: params & searchParams are Promises, must be awaited
+  const { slug } = await params;
+  const { to: namaTamu = "Tamu Spesial" } = await searchParams;
 
-  const { data: klien, error } = await supabase
+  // Coba ambil dari Supabase dulu
+  const { data: klienDb } = await supabase
     .from("undangan")
     .select("*")
     .eq("slug", slug)
     .single();
 
-  if (error || !klien) {
+  // Jika ada di DB, pakai data DB. Jika tidak, cek apakah ini slug demo.
+  const klien = klienDb ?? DEMO_DATA[slug] ?? null;
+
+  if (!klien) {
     notFound();
   }
 
-  // KAMUS WARNA UNTUK 10 TEMPLATE
-  const temaDesain = {
-    "Elegance Gold": { bg: "bg-[#FDFBF7]", text: "text-slate-900", aksen: "text-amber-700", border: "border-amber-200", boxBg: "bg-white" },
-    "Rustic Sage": { bg: "bg-[#F1F4F0]", text: "text-emerald-950", aksen: "text-emerald-700", border: "border-emerald-200", boxBg: "bg-white" },
-    "Ocean Navy": { bg: "bg-slate-50", text: "text-slate-900", aksen: "text-blue-900", border: "border-blue-200", boxBg: "bg-white" },
-    "Terracotta Warm": { bg: "bg-[#FAF5F0]", text: "text-stone-900", aksen: "text-orange-800", border: "border-orange-200", boxBg: "bg-white" },
-    "Monochrome": { bg: "bg-white", text: "text-black", aksen: "text-gray-500", border: "border-gray-300", boxBg: "bg-gray-50" },
-    "Pastel Dream": { bg: "bg-rose-50", text: "text-rose-950", aksen: "text-rose-500", border: "border-rose-200", boxBg: "bg-white" },
-    "Royal Burgundy": { bg: "bg-[#FCF9F9]", text: "text-slate-900", aksen: "text-rose-900", border: "border-rose-200", boxBg: "bg-white" },
-    "Midnight Glam": { bg: "bg-slate-950", text: "text-slate-100", aksen: "text-amber-500", border: "border-amber-500", boxBg: "bg-slate-900" },
-    "Vintage Sepia": { bg: "bg-[#F4EFE6]", text: "text-yellow-950", aksen: "text-yellow-800", border: "border-yellow-300", boxBg: "bg-[#FCFBF8]" },
-    "Lavender Joy": { bg: "bg-fuchsia-50", text: "text-fuchsia-950", aksen: "text-purple-700", border: "border-purple-200", boxBg: "bg-white" }
-  };
-
-  // Ambil warna sesuai tema yang dipilih klien (default Elegance Gold)
-  const warna = temaDesain[klien.tema] || temaDesain["Elegance Gold"];
-
   return (
-    <div className={`min-h-screen ${warna.bg} ${warna.text} flex flex-col items-center justify-center p-6 text-center font-sans transition-all duration-500`}>
-      
-      {/* Bagian Penerima Tamu */}
-      <div className="mb-12 mt-8">
-        <p className={`text-sm tracking-widest uppercase font-bold mb-2 ${warna.aksen}`}>Kepada Yth.</p>
-        <h2 className={`text-3xl font-serif font-bold border-b-2 pb-2 inline-block px-4 ${warna.border}`}>
-          {namaTamu}
-        </h2>
-      </div>
-
-      {/* Kotak Utama Undangan */}
-      <div className={`${warna.boxBg} p-10 rounded-3xl shadow-xl max-w-lg w-full border ${warna.border}`}>
-        <p className="text-xs uppercase tracking-widest mb-4 opacity-70">The Wedding Of</p>
-        
-        <h1 className={`text-5xl font-serif mb-6 ${warna.aksen}`}>
-          {klien.nama_klien}
-        </h1>
-
-        <div className="text-sm space-y-4 mb-8">
-          <p>
-            <span className="font-bold text-lg">{klien.nama_pria}</span> <br/>
-            <span className="text-xs opacity-75">Putra dari {klien.ortu_pria || "Bapak & Ibu"}</span>
-          </p>
-          <p className={`font-serif italic text-2xl ${warna.aksen}`}>&</p>
-          <p>
-            <span className="font-bold text-lg">{klien.nama_wanita}</span> <br/>
-            <span className="text-xs opacity-75">Putri dari {klien.ortu_wanita || "Bapak & Ibu"}</span>
-          </p>
-        </div>
-
-        {/* Bagian Jadwal Acara */}
-        <div className={`p-4 rounded-xl text-sm border border-opacity-50 ${warna.border}`}>
-          <p className={`font-bold mb-2 ${warna.aksen}`}>📅 {klien.tanggal_acara}</p>
-          <p className="mb-1">🕌 Akad: <span className="font-semibold">{klien.tempat_akad || "Menyusul"}</span></p>
-          <p>🏢 Resepsi: <span className="font-semibold">{klien.tempat_resepsi || "Menyusul"}</span></p>
-        </div>
-      </div>
-
-      {/* Form RSVP */}
-      <RsvpForm slug={slug} />
-      
-      <p className="mt-12 text-xs opacity-50">Dibuat menggunakan Syifa Digital Invitation</p>
-    </div>
+    <UndanganPageClient klien={klien} namaTamu={namaTamu} slug={slug} />
   );
 }

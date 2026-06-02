@@ -33,11 +33,13 @@ export default function OrderPage() {
     }
 
     // Nomor WhatsApp tujuan pesanan (Ganti dengan nomormu nanti)
-    const nomorWA = "6285705368511"; 
+    const nomorWA = "6285705368511";
+
+    const baseUrl = window.location.origin;
 
     const teksPesan = encodeURIComponent(
       `🛒 *PESAN UNDANGAN DIGITAL SAAS*\n\n` +
-      `🔗 *Pilihan URL:* localhost:3000/${formData.slug}\n` +
+      `🔗 *Pilihan URL:* ${baseUrl}/${formData.slug}\n` +
       `👥 *Nama Klien:* ${formData.namaKlien}\n\n` +
       `🤵‍♂️ *Mempelai Pria:* ${formData.namaPria}\n` +
       `👨‍👩‍👦 *Ortu Pria:* ${formData.ortuPria}\n\n` +
